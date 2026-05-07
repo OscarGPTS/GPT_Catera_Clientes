@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)",
+      "Bash(php artisan *)",
+      "Bash(./vendor/bin/pest)",
+      "Bash(./vendor/bin/pest tests/Feature/ExampleTest.php)",
+      "Bash(npm run *)",
+      "Bash(./vendor/bin/pint --test)",
+      "Bash(./vendor/bin/pint)",
+      "Bash(./vendor/bin/pest --filter=\"CalculadoraCoss\")",
+      "Bash(./vendor/bin/pest --filter=\"TestUsersSeederTest\")"
+    ]
+  }
+}

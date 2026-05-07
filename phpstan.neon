@@ -1,0 +1,17 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - app
+
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+
+    ignoreErrors:
+        # Spatie Permission añade traits dinámicos sobre el modelo User
+        - '#Call to an undefined method App\\Models\\User::#'
