@@ -11,7 +11,12 @@
       "Bash(./vendor/bin/pint --test)",
       "Bash(./vendor/bin/pint)",
       "Bash(./vendor/bin/pest --filter=\"CalculadoraCoss\")",
-      "Bash(./vendor/bin/pest --filter=\"TestUsersSeederTest\")"
+      "Bash(./vendor/bin/pest --filter=\"TestUsersSeederTest\")",
+      "Bash(cd 'c:\\\\xampp\\\\htdocs\\\\GPT_Cartera_Clientes2' && mkdir -p app/Http/Controllers/Oportunidades app/Http/Requests/Oportunidades resources/views/oportunidades 2>&1)",
+      "Bash(php -r \"echo PHP_VERSION;\")",
+      "Bash(composer show *)",
+      "Bash(./vendor/bin/pest --filter=Cotizacion)",
+      "Bash(./vendor/bin/pest --filter=Adjudicacion)"
     ]
   }
 }

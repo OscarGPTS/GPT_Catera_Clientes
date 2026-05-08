@@ -27,4 +27,9 @@ class Cronograma extends Model
     {
         return $this->hasMany(CronogramaActividad::class)->orderBy('fecha_inicio_planeada');
     }
+
+    public function generadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'generado_por_id');
+    }
 }

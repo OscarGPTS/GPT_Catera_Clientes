@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Proyecto extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'tech_reference', 'cp_numero', 'dn_numero', 'año',
@@ -43,6 +45,41 @@ class Proyecto extends Model
     public function eventos(): HasMany
     {
         return $this->hasMany(ProyectoEvento::class)->latest();
+    }
+
+    public function cotizaciones(): HasMany
+    {
+        return $this->hasMany(Cotizacion::class)->orderByDesc('version');
+    }
+
+    public function cotizacionVigente()
+    {
+        return $this->cotizaciones()->whereIn('status', ['emitida', 'interno_aprobado', 'borrador'])->orderByDesc('version')->first();
+    }
+
+    public function minutaEntrega(): HasOne
+    {
+        return $this->hasOne(MinutaEntrega::class);
+    }
+
+    public function libro(): HasOne
+    {
+        return $this->hasOne(LibroProyecto::class);
+    }
+
+    public function koms(): HasMany
+    {
+        return $this->hasMany(KickOffMeeting::class)->orderByDesc('fecha');
+    }
+
+    public function cronogramas(): HasMany
+    {
+        return $this->hasMany(Cronograma::class)->orderByDesc('version');
+    }
+
+    public function cronogramaVigente()
+    {
+        return $this->cronogramas()->orderByDesc('version')->first();
     }
 
     public function directorDn(): BelongsTo

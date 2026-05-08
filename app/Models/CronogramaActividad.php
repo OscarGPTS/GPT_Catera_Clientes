@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CronogramaActividad extends Model
 {
+    protected $table = 'cronograma_actividades';
+
     protected $fillable = [
         'cronograma_id', 'codigo', 'nombre', 'parent_id',
         'fecha_inicio_planeada', 'fecha_fin_planeada',

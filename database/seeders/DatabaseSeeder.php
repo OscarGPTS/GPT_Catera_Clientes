@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RhRoleMappingSeeder::class,
             ComercialCatalogosSeeder::class,
             TestUsersSeeder::class,
+            ProyectosTestSeeder::class,
         ]);
 
         $admin = User::firstOrCreate(

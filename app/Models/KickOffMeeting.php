@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KickOffMeeting extends Model
 {
+    protected $table = 'kick_off_meetings';
+
     protected $fillable = [
         'proyecto_id', 'tipo', 'fecha', 'participantes', 'agenda', 'minuta',
         'minuta_pdf_path', 'cronograma_attached_id',
@@ -20,5 +22,10 @@ class KickOffMeeting extends Model
     public function proyecto(): BelongsTo
     {
         return $this->belongsTo(Proyecto::class);
+    }
+
+    public function cronograma(): BelongsTo
+    {
+        return $this->belongsTo(Cronograma::class, 'cronograma_attached_id');
     }
 }
