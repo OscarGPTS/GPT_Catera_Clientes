@@ -14,10 +14,16 @@ class BomBoeItem extends Model
 
     protected $casts = [
         'fecha_requerida' => 'date',
+        'cantidad' => 'decimal:4',
     ];
 
     public function proyecto(): BelongsTo
     {
         return $this->belongsTo(Proyecto::class);
+    }
+
+    public function responsable(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 }

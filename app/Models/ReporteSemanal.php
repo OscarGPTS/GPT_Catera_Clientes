@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReporteSemanal extends Model
 {
+    protected $table = 'reportes_semanales';
+
     protected $fillable = [
         'proyecto_id', 'semana_inicio', 'semana_fin',
         'contenido_html', 'generado_at', 'enviado_at', 'recipients', 'pdf_path',

@@ -22,6 +22,11 @@ class LibroSeccion extends Model
         return $this->belongsTo(LibroProyecto::class, 'libro_id');
     }
 
+    public function responsable(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
+    }
+
     public function checklist(): HasMany
     {
         return $this->hasMany(LibroSeccionChecklist::class, 'seccion_id');

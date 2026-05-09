@@ -29,4 +29,11 @@ class MovimientoBancario extends Model
     {
         return $this->belongsTo(Proyecto::class, 'conciliado_con_proyecto_id');
     }
+
+    public function scopeConciliado($query, bool $value = true)
+    {
+        return $value
+            ? $query->whereNotNull('conciliado_at')
+            : $query->whereNull('conciliado_at');
+    }
 }

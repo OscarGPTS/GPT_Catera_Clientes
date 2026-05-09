@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CierreMensual extends Model
@@ -27,8 +28,23 @@ class CierreMensual extends Model
         return $this->hasMany(CierreSeccion::class, 'cierre_id');
     }
 
+    public function generadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'generado_por_id');
+    }
+
+    public function aprobadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'aprobado_por_id');
+    }
+
     public function totalGeneral(): float
     {
         return (float) $this->secciones->sum('total');
+    }
+
+    public function periodoLabel(): string
+    {
+        return sprintf('%02d/%d', $this->mes, $this->año);
     }
 }

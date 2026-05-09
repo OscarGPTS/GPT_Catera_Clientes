@@ -18,4 +18,9 @@ class LibroDocumento extends Model
     {
         return $this->belongsTo(LibroSeccion::class, 'seccion_id');
     }
+
+    public function subidoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'subido_por_id');
+    }
 }

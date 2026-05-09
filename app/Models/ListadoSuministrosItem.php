@@ -17,6 +17,7 @@ class ListadoSuministrosItem extends Model
     protected $casts = [
         'fecha_requerida' => 'date',
         'porcentaje_avance' => 'decimal:2',
+        'cantidad' => 'decimal:4',
     ];
 
     public function listado(): BelongsTo

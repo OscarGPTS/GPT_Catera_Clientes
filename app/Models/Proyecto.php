@@ -82,6 +82,46 @@ class Proyecto extends Model
         return $this->cronogramas()->orderByDesc('version')->first();
     }
 
+    public function bomBoeItems(): HasMany
+    {
+        return $this->hasMany(BomBoeItem::class);
+    }
+
+    public function listadoSuministros(): HasOne
+    {
+        return $this->hasOne(ListadoSuministros::class);
+    }
+
+    public function solicitudesInternas(): HasMany
+    {
+        return $this->hasMany(SolicitudInterna::class)->latest();
+    }
+
+    public function bitacoras(): HasMany
+    {
+        return $this->hasMany(BitacoraDiaria::class)->orderByDesc('fecha');
+    }
+
+    public function reportesSemanales(): HasMany
+    {
+        return $this->hasMany(ReporteSemanal::class)->orderByDesc('semana_inicio');
+    }
+
+    public function solicitudesViaticos(): HasMany
+    {
+        return $this->hasMany(SolicitudViaticos::class)->latest();
+    }
+
+    public function cartaFiniquito(): HasOne
+    {
+        return $this->hasOne(CartaFiniquito::class);
+    }
+
+    public function postMortem(): HasOne
+    {
+        return $this->hasOne(PostMortem::class);
+    }
+
     public function directorDn(): BelongsTo
     {
         return $this->belongsTo(User::class, 'director_dn_id');

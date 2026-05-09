@@ -16,7 +16,13 @@
       "Bash(php -r \"echo PHP_VERSION;\")",
       "Bash(composer show *)",
       "Bash(./vendor/bin/pest --filter=Cotizacion)",
-      "Bash(./vendor/bin/pest --filter=Adjudicacion)"
+      "Bash(./vendor/bin/pest --filter=Adjudicacion)",
+      "Bash(./vendor/bin/pest --filter=Libro)",
+      "Bash(./vendor/bin/pest --filter=Ejecucion)",
+      "Bash(./vendor/bin/pest --filter=\"regenerar mismo\")",
+      "Bash(php -r 'try { new PDO\\('\\\\''mysql:host=127.0.0.1;port=3306'\\\\'', '\\\\''root'\\\\'', '\\\\'''\\\\''\\); echo '\\\\''OK'\\\\''; } catch\\(Exception $e\\) { echo '\\\\''FAIL: '\\\\''.$e->getMessage\\(\\); }')",
+      "Bash(./vendor/bin/pest --filter=Cierre)",
+      "Bash(php -r \"echo Livewire\\\\Livewire::class; if \\(class_exists\\('Livewire\\\\Component'\\)\\) echo PHP_EOL.'OK';\")"
     ]
   }
 }

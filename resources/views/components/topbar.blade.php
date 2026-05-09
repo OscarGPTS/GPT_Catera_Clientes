@@ -17,13 +17,13 @@
             </a>
         @endif
 
-        <button class="relative rounded-md p-2 hover:bg-slate-100" aria-label="Notificaciones">
-            <svg class="h-5 w-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14V11a6 6 0 00-12 0v3a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0"/></svg>
-        </button>
+        @auth
+            @livewire('notifications.notification-bell')
+        @endauth
 
-        <button class="relative rounded-md p-2 hover:bg-slate-100" aria-label="Chat">
+        <a href="{{ route('chat.index') }}" class="relative rounded-md p-2 hover:bg-slate-100" aria-label="Chat">
             <svg class="h-5 w-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.9 9.9 0 01-4-.8L3 21l1.8-5A8 8 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z"/></svg>
-        </button>
+        </a>
 
         @if ($user)
             <div class="relative" x-data="{ open: false }">

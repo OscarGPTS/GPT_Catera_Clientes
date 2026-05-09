@@ -36,4 +36,19 @@ class SolicitudViaticos extends Model
     {
         return $this->hasMany(ViaticosPartida::class, 'solicitud_id');
     }
+
+    public function solicitante(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'solicitante_id');
+    }
+
+    public function aprobadorServGrales(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'aprobador_serv_grales_id');
+    }
+
+    public function aprobadorDireccion(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'aprobador_direccion_id');
+    }
 }

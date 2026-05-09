@@ -108,6 +108,10 @@ class OportunidadesController extends Controller
             'ingenieroCostos', 'ingenieroProyectos', 'trainee',
             'eventos.user', 'cotizaciones', 'minutaEntrega',
             'koms', 'cronogramas:id,proyecto_id,version,fecha_inicio,fecha_fin',
+            'bomBoeItems:id,proyecto_id', 'listadoSuministros', 'solicitudesInternas',
+            'libro', 'bitacoras:id,proyecto_id,fecha,firmado_at', 'reportesSemanales:id,proyecto_id,semana_inicio',
+            'solicitudesViaticos:id,proyecto_id,status',
+            'cartaFiniquito', 'postMortem',
         ]);
 
         return view('oportunidades.show', [

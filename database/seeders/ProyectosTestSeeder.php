@@ -7,14 +7,25 @@ use App\Models\Cronograma;
 use App\Models\Proyecto;
 use App\Models\Sublinea;
 use App\Models\User;
+use App\Services\Chat\ChatService;
+use App\Services\Cierre\CartaFiniquitoService;
+use App\Services\Cierre\PostMortemService;
 use App\Services\Cotizaciones\CotizacionPdfGenerator;
 use App\Services\Cotizaciones\CotizacionService;
+use App\Services\Ejecucion\BitacoraService;
+use App\Services\Ejecucion\ReporteSemanalService;
+use App\Services\Ejecucion\ViaticosService;
 use App\Services\Libro\AperturaLibroService;
+use App\Services\Libro\LibroService;
 use App\Services\Minutas\MinutaEntregaService;
+use App\Services\Procura\BomService;
+use App\Services\Procura\SolicitudInternaService;
+use App\Services\Procura\SuministrosService;
 use App\Services\Proyectos\CronogramaService;
 use App\Services\Proyectos\KomService;
 use App\Services\Proyectos\SecuenciasService;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 /**
@@ -43,6 +54,9 @@ class ProyectosTestSeeder extends Seeder
         $minutaService = app(MinutaEntregaService::class);
         $komService = app(KomService::class);
         $cronogramaService = app(CronogramaService::class);
+        $bomService = app(BomService::class);
+        $suministrosService = app(SuministrosService::class);
+        $solicitudService = app(SolicitudInternaService::class);
 
         // Personas clave (sembradas por TestUsersSeeder)
         $directorDn = User::where('email', 'pmartinez@gptservices.com')->firstOrFail();
@@ -298,7 +312,30 @@ class ProyectosTestSeeder extends Seeder
             }
 
             if (! empty($row['crear_libro'])) {
-                $aperturaLibro->abrirParaProyecto($proyecto->fresh());
+                $libro = $aperturaLibro->abrirParaProyecto($proyecto->fresh());
+
+                // M6 · Llenar parcialmente el checklist según el estado del proyecto.
+                $porcentajeCompletado = match ($row['estado']) {
+                    'en_ejecucion' => 0.40,
+                    'en_cierre' => 0.85,
+                    'cerrado' => 1.00,
+                    default => 0,
+                };
+
+                if ($porcentajeCompletado > 0) {
+                    $autor = $row['gerente_proyectos'] ?? $row['director_dn'];
+                    $libroService = app(LibroService::class);
+
+                    foreach ($libro->secciones as $seccion) {
+                        $items = $seccion->checklist;
+                        $aMarcar = (int) ceil($items->count() * $porcentajeCompletado);
+                        foreach ($items->take($aMarcar) as $item) {
+                            $libroService->toggleChecklistItem($item, $autor->id);
+                        }
+                    }
+
+                    $libroService->actualizarBloqueoCierre($libro->fresh());
+                }
             }
 
             // KOM + cronograma para los que ya están en ejecución (M5a)
@@ -331,10 +368,170 @@ class ProyectosTestSeeder extends Seeder
                     ],
                 ]);
                 $komService->actualizar($komCliente, ['cronograma_attached_id' => $cron->id]);
+
+                // M5b · BOM/BOE heredado de la cotización + Suministros heredado del BOM.
+                $bomService->importarDesdeCotizacion($proyecto->fresh(), $autor->id);
+                $suministrosService->importarDesdeBom($proyecto->fresh());
+
+                // M7 · Bitácoras de los últimos 7 días + un reporte semanal
+                $bitacoraService = app(BitacoraService::class);
+                $reporteService = app(ReporteSemanalService::class);
+                $resumenes = [
+                    'Equipo arribó a sitio. Permisos QHSE liberados. Inicio de actividades del día sin novedades.',
+                    'Avance normal de soldadura. Sin desviaciones reportadas. Cliente realiza inspección parcial.',
+                    'Retraso de 2 horas por lluvia. Se recuperó turno extendido al final del día.',
+                    'Pruebas de hermeticidad ejecutadas con resultados conformes. Documento NDT cargado al libro.',
+                    'Falla menor en equipo de soldadura corregida en sitio. Cero impacto en avance.',
+                    'Jornada productiva. Personal alineado con cronograma. Sin incidentes.',
+                    'Cierre del día con avance del 12% del plan semanal. VoBo verbal del cliente.',
+                ];
+                foreach (range(0, 6) as $i) {
+                    $fecha = now()->subDays(7 - $i)->toDateString();
+                    if (! $proyecto->bitacoras()->where('fecha', $fecha)->exists()) {
+                        $bitacoraService->crear($proyecto->fresh(), $autor->id, [
+                            'fecha' => $fecha,
+                            'relacion_actividades' => $resumenes[$i % count($resumenes)],
+                            'personal_gpt' => [
+                                ['nombre' => $autor->name, 'rol' => 'GP'],
+                                ['nombre' => $row['ingeniero_proyectos']?->name ?? 'IP', 'rol' => 'IP'],
+                            ],
+                            'equipos_en_sitio' => [
+                                ['nombre' => 'Máquina de soldadura', 'cantidad' => '2'],
+                            ],
+                            'proveedores_subcontratistas' => [],
+                        ]);
+                    }
+                }
+
+                $reporteService->generar($proyecto->fresh(), CarbonImmutable::now()->startOfWeek(), $autor->id);
+
+                // M7 · Una solicitud de viáticos aprobada para los proyectos en ejecución
+                if ($row['estado'] === 'en_ejecucion') {
+                    $servGrales = User::role('serv_generales')->first() ?? User::where('email', 'sordaz@gptservices.com')->first();
+                    $direccion = User::role('direccion_general')->first() ?? $row['director_dn'];
+                    $viaticosService = app(ViaticosService::class);
+
+                    $solicitud = $viaticosService->crear($proyecto->fresh(), $autor->id, [
+                        'periodo_inicio' => now()->subDays(10)->toDateString(),
+                        'periodo_fin' => now()->subDays(5)->toDateString(),
+                        'justificacion' => 'Movilización de cuadrilla a sitio para arranque de actividades.',
+                        'personal' => [
+                            ['user_id' => $autor->id, 'dias' => 5],
+                            ['user_id' => $row['ingeniero_proyectos']?->id ?? $autor->id, 'dias' => 5],
+                        ],
+                        'partidas' => [
+                            ['concepto' => 'hospedaje', 'monto_estimado' => 8000, 'observaciones' => '5 noches × 2 personas'],
+                            ['concepto' => 'alimentos', 'monto_estimado' => 4500, 'observaciones' => 'viático estándar'],
+                            ['concepto' => 'transporte', 'monto_estimado' => 3000, 'observaciones' => 'gasolina + casetas'],
+                        ],
+                    ]);
+
+                    $viaticosService->emitir($solicitud, $autor->id);
+                    if ($servGrales) {
+                        $viaticosService->aprobarServGrales($solicitud->fresh(), $servGrales->id);
+                    }
+                    if ($direccion) {
+                        $viaticosService->aprobarDireccion($solicitud->fresh(), $direccion->id);
+                    }
+                }
+
+                // Una solicitud interna típica respondida por Compras.
+                $compras = User::where('email', 'jbecerra@gptservices.com')->first();
+                if ($compras) {
+                    $solicitud = $solicitudService->crear($proyecto->fresh(), $autor->id, [
+                        'tipo' => 'requisicion_compras',
+                        'codigo_formato' => 'FO-GPT-CMP-01',
+                        'asignado_id' => $compras->id,
+                        'fecha_respuesta_requerida' => now()->subDays(10)->toDateString(),
+                        'descripcion' => 'Solicitud de procura urgente para arranque de proyecto.',
+                        'items' => [
+                            ['descripcion' => 'Material de procedimientos', 'cantidad' => 1, 'unidad' => 'lote', 'especificacion' => 'según especificación técnica'],
+                            ['descripcion' => 'Consumibles de soldadura', 'cantidad' => 50, 'unidad' => 'kg'],
+                        ],
+                    ]);
+                    $solicitudService->emitir($solicitud, $autor->id);
+                    $solicitudService->responder($solicitud, $compras->id, 'OC liberada con proveedor habitual. Entrega confirmada para próxima semana.');
+                }
             }
 
-            if ($row['estado'] === 'cerrado') {
-                $proyecto->recordEvent('carta_finiquito_emitida', $row['gerente_proyectos']->id);
+            // M10 · Canal de chat por proyecto (adjudicado_firmado+) con mensajes de muestra.
+            if (in_array($row['estado'], ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado'])) {
+                $chatService = app(ChatService::class);
+                $canal = $chatService->canalParaProyecto($proyecto->fresh());
+
+                $autorChat = $row['gerente_proyectos'] ?? $row['director_dn'];
+                $compras = User::where('email', 'jbecerra@gptservices.com')->first();
+
+                $chatService->enviarMensaje($canal, $autorChat->id, "Equipo, ya tenemos OC firmada para {$proyecto->cp_numero}. Arrancamos.");
+
+                if (in_array($row['estado'], ['en_ejecucion', 'en_cierre', 'cerrado'])) {
+                    if ($compras) {
+                        $chatService->enviarMensaje($canal, $compras->id, "@{$autorChat->name} confirmo que la procura está liberada.");
+                    }
+                    if (! empty($row['ingeniero_proyectos'])) {
+                        $chatService->enviarMensaje(
+                            $canal,
+                            $row['ingeniero_proyectos']->id,
+                            'Bitácora del día subida. Sin desviaciones.',
+                        );
+                    }
+                }
+
+                if ($row['estado'] === 'cerrado') {
+                    $chatService->enviarMensaje($canal, $autorChat->id, 'Proyecto cerrado oficialmente. Buen trabajo equipo 🎉');
+                }
+            }
+
+            // M8 · Carta Finiquito + Post-Mortem para en_cierre y cerrado
+            if (in_array($row['estado'], ['en_cierre', 'cerrado'])) {
+                $autor = $row['gerente_proyectos'] ?? $row['director_dn'];
+                $cartaService = app(CartaFiniquitoService::class);
+                $pmService = app(PostMortemService::class);
+
+                $cartaService->crearOActualizar($proyecto->fresh(), $autor->id, [
+                    'fecha_emision' => now()->subDays(rand(1, 10))->toDateString(),
+                    'observaciones' => 'Proyecto entregado satisfactoriamente. No quedan reclamaciones pendientes.',
+                    'personal_liberado' => [
+                        ['nombre' => $autor->name, 'rol' => 'Gerente de Proyectos'],
+                        ['nombre' => $row['ingeniero_proyectos']?->name ?? '—', 'rol' => 'Ingeniero de Proyectos'],
+                    ],
+                    'equipos_liberados' => [
+                        ['nombre' => 'Máquina de soldadura'],
+                        ['nombre' => 'Equipo de inspección NDT'],
+                    ],
+                ]);
+
+                if ($row['estado'] === 'cerrado') {
+                    // Para cerrado: firmar ambas y luego cerrar formalmente
+                    $cartaService->firmarGpt($proyecto->fresh()->cartaFiniquito, $autor->id);
+                    $cartaService->firmarCliente(
+                        $proyecto->fresh()->cartaFiniquito,
+                        $autor->id,
+                        'Representante del cliente',
+                    );
+
+                    $pmService->crearOActualizar($proyecto->fresh(), $autor->id, [
+                        'fecha_sesion' => now()->subDays(rand(1, 5))->toDateString(),
+                        'lecciones_aprendidas' => "Proyecto entregado en tiempo y forma.\n\nLo que funcionó: planeación temprana del cronograma, comunicación constante con cliente.\n\nÁreas de mejora: documentar mejor las desviaciones del día a día.",
+                        'presupuesto_planeado' => $row['monto'],
+                        'presupuesto_real' => $row['monto'] * 1.05, // 5% sobrecosto
+                        'participantes' => [
+                            ['nombre' => $row['director_dn']->name, 'rol' => 'Director DN'],
+                            ['nombre' => $autor->name, 'rol' => 'GP'],
+                            ['nombre' => $row['gerente_operaciones']?->name ?? '—', 'rol' => 'GO'],
+                        ],
+                        'recomendaciones_mejora' => [
+                            ['texto' => 'Establecer reuniones semanales con cliente desde el día 1', 'responsable' => 'GP'],
+                            ['texto' => 'Mejorar template de bitácora diaria', 'responsable' => 'QHSE'],
+                        ],
+                    ]);
+
+                    // Cerrar formalmente (transiciona estado a 'cerrado' — pero ya está)
+                    // así que sólo registramos un evento adicional si hace falta.
+                    if ($proyecto->fresh()->estado !== 'cerrado') {
+                        $cartaService->cerrarProyecto($proyecto->fresh()->cartaFiniquito, $autor->id);
+                    }
+                }
             }
         }
 

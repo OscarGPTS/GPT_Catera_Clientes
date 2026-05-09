@@ -9,13 +9,26 @@ use App\Http\Controllers\Asignaciones\AsignacionesController;
 use App\Http\Controllers\Auth\Auth0Controller;
 use App\Http\Controllers\Auth\EmailPasswordController;
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Chat\ChatController;
+use App\Http\Controllers\Cierre\CierreController;
 use App\Http\Controllers\Cotizaciones\CotizacionesController;
 use App\Http\Controllers\Cronograma\CronogramaController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Ejecucion\BitacoraController;
+use App\Http\Controllers\Ejecucion\ReporteSemanalController;
+use App\Http\Controllers\Ejecucion\ViaticosController;
 use App\Http\Controllers\Ejecutivo\EjecutivoController;
+use App\Http\Controllers\Finanzas\CierresController;
+use App\Http\Controllers\Finanzas\ConciliacionController;
+use App\Http\Controllers\Finanzas\CuentasBancariasController;
+use App\Http\Controllers\Finanzas\EstadosCuentaController;
 use App\Http\Controllers\Kom\KomController;
+use App\Http\Controllers\Libro\LibroController;
 use App\Http\Controllers\Minutas\MinutaEntregaController;
 use App\Http\Controllers\Oportunidades\OportunidadesController;
+use App\Http\Controllers\Procura\BomController;
+use App\Http\Controllers\Procura\SolicitudesInternasController;
+use App\Http\Controllers\Procura\SuministrosController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect('/dashboard'))->name('home');
@@ -93,14 +106,112 @@ Route::middleware('auth')->group(function () {
     Route::patch('/proyectos/{proyecto}/cronogramas/{cronograma}/actividades/{actividad}', [CronogramaController::class, 'updateActividad'])->name('cronogramas.actividades.update');
     Route::delete('/proyectos/{proyecto}/cronogramas/{cronograma}/actividades/{actividad}', [CronogramaController::class, 'destroyActividad'])->name('cronogramas.actividades.destroy');
 
+    // M5b · BOM/BOE
+    Route::get('/proyectos/{proyecto}/bom', [BomController::class, 'index'])->name('bom.index');
+    Route::post('/proyectos/{proyecto}/bom/importar', [BomController::class, 'importar'])->name('bom.importar');
+    Route::post('/proyectos/{proyecto}/bom', [BomController::class, 'store'])->name('bom.store');
+    Route::patch('/proyectos/{proyecto}/bom/{item}', [BomController::class, 'update'])->name('bom.update');
+    Route::delete('/proyectos/{proyecto}/bom/{item}', [BomController::class, 'destroy'])->name('bom.destroy');
+
+    // M5b · Suministros (listado por etapas)
+    Route::get('/proyectos/{proyecto}/suministros', [SuministrosController::class, 'show'])->name('suministros.show');
+    Route::post('/proyectos/{proyecto}/suministros/importar', [SuministrosController::class, 'importar'])->name('suministros.importar');
+    Route::post('/proyectos/{proyecto}/suministros/items', [SuministrosController::class, 'store'])->name('suministros.items.store');
+    Route::patch('/proyectos/{proyecto}/suministros/items/{item}', [SuministrosController::class, 'update'])->name('suministros.items.update');
+    Route::delete('/proyectos/{proyecto}/suministros/items/{item}', [SuministrosController::class, 'destroy'])->name('suministros.items.destroy');
+
+    // M5b · Solicitudes Internas (Compras / Ingeniería)
+    Route::get('/proyectos/{proyecto}/solicitudes', [SolicitudesInternasController::class, 'index'])->name('solicitudes.index');
+    Route::post('/proyectos/{proyecto}/solicitudes', [SolicitudesInternasController::class, 'store'])->name('solicitudes.store');
+    Route::get('/proyectos/{proyecto}/solicitudes/{solicitud}', [SolicitudesInternasController::class, 'show'])->name('solicitudes.show');
+    Route::post('/proyectos/{proyecto}/solicitudes/{solicitud}/emitir', [SolicitudesInternasController::class, 'emitir'])->name('solicitudes.emitir');
+    Route::post('/proyectos/{proyecto}/solicitudes/{solicitud}/tomar', [SolicitudesInternasController::class, 'tomar'])->name('solicitudes.tomar');
+    Route::post('/proyectos/{proyecto}/solicitudes/{solicitud}/responder', [SolicitudesInternasController::class, 'responder'])->name('solicitudes.responder');
+    Route::post('/proyectos/{proyecto}/solicitudes/{solicitud}/cancelar', [SolicitudesInternasController::class, 'cancelar'])->name('solicitudes.cancelar');
+
+    // M6 · Libro de Proyecto
+    Route::get('/proyectos/{proyecto}/libro', [LibroController::class, 'show'])->name('libro.show');
+    Route::patch('/proyectos/{proyecto}/libro/items/{item}/toggle', [LibroController::class, 'toggleItem'])->name('libro.items.toggle');
+    Route::post('/proyectos/{proyecto}/libro/secciones/{seccion}/items', [LibroController::class, 'storeItem'])->name('libro.items.store');
+    Route::delete('/proyectos/{proyecto}/libro/items/{item}', [LibroController::class, 'destroyItem'])->name('libro.items.destroy');
+    Route::patch('/proyectos/{proyecto}/libro/secciones/{seccion}', [LibroController::class, 'updateSeccion'])->name('libro.secciones.update');
+    Route::post('/proyectos/{proyecto}/libro/secciones/{seccion}/documentos', [LibroController::class, 'uploadDocumento'])->name('libro.documentos.upload');
+    Route::get('/proyectos/{proyecto}/libro/documentos/{documento}/descargar', [LibroController::class, 'descargarDocumento'])->name('libro.documentos.descargar');
+    Route::delete('/proyectos/{proyecto}/libro/documentos/{documento}', [LibroController::class, 'destroyDocumento'])->name('libro.documentos.destroy');
+
+    // M7 · Bitácora diaria
+    Route::get('/proyectos/{proyecto}/bitacoras', [BitacoraController::class, 'index'])->name('bitacoras.index');
+    Route::post('/proyectos/{proyecto}/bitacoras', [BitacoraController::class, 'store'])->name('bitacoras.store');
+    Route::get('/proyectos/{proyecto}/bitacoras/{bitacora}', [BitacoraController::class, 'show'])->name('bitacoras.show');
+    Route::patch('/proyectos/{proyecto}/bitacoras/{bitacora}', [BitacoraController::class, 'update'])->name('bitacoras.update');
+    Route::post('/proyectos/{proyecto}/bitacoras/{bitacora}/vobo', [BitacoraController::class, 'vobo'])->name('bitacoras.vobo');
+    Route::delete('/proyectos/{proyecto}/bitacoras/{bitacora}', [BitacoraController::class, 'destroy'])->name('bitacoras.destroy');
+    Route::get('/proyectos/{proyecto}/bitacoras/{bitacora}/pdf', [BitacoraController::class, 'pdf'])->name('bitacoras.pdf');
+
+    // M7 · Reportes semanales
+    Route::get('/proyectos/{proyecto}/reportes', [ReporteSemanalController::class, 'index'])->name('reportes.index');
+    Route::post('/proyectos/{proyecto}/reportes', [ReporteSemanalController::class, 'store'])->name('reportes.store');
+    Route::get('/proyectos/{proyecto}/reportes/{reporte}', [ReporteSemanalController::class, 'show'])->name('reportes.show');
+    Route::patch('/proyectos/{proyecto}/reportes/{reporte}/regenerar', [ReporteSemanalController::class, 'regenerar'])->name('reportes.regenerar');
+    Route::post('/proyectos/{proyecto}/reportes/{reporte}/enviar', [ReporteSemanalController::class, 'enviar'])->name('reportes.enviar');
+    Route::get('/proyectos/{proyecto}/reportes/{reporte}/pdf', [ReporteSemanalController::class, 'pdf'])->name('reportes.pdf');
+
+    // M7 · Viáticos
+    Route::get('/proyectos/{proyecto}/viaticos', [ViaticosController::class, 'index'])->name('viaticos.index');
+    Route::post('/proyectos/{proyecto}/viaticos', [ViaticosController::class, 'store'])->name('viaticos.store');
+    Route::get('/proyectos/{proyecto}/viaticos/{solicitud}', [ViaticosController::class, 'show'])->name('viaticos.show');
+    Route::post('/proyectos/{proyecto}/viaticos/{solicitud}/emitir', [ViaticosController::class, 'emitir'])->name('viaticos.emitir');
+    Route::post('/proyectos/{proyecto}/viaticos/{solicitud}/aprobar-servgrales', [ViaticosController::class, 'aprobarServGrales'])->name('viaticos.aprobar.servgrales');
+    Route::post('/proyectos/{proyecto}/viaticos/{solicitud}/aprobar-direccion', [ViaticosController::class, 'aprobarDireccion'])->name('viaticos.aprobar.direccion');
+    Route::post('/proyectos/{proyecto}/viaticos/{solicitud}/rechazar', [ViaticosController::class, 'rechazar'])->name('viaticos.rechazar');
+    Route::patch('/proyectos/{proyecto}/viaticos/{solicitud}/reales', [ViaticosController::class, 'registrarReales'])->name('viaticos.reales');
+    Route::get('/proyectos/{proyecto}/viaticos/{solicitud}/pdf', [ViaticosController::class, 'pdf'])->name('viaticos.pdf');
+
+    // M8 · Cierre (Carta Finiquito + Post-Mortem)
+    Route::get('/proyectos/{proyecto}/cierre', [CierreController::class, 'show'])->name('cierre.show');
+    Route::post('/proyectos/{proyecto}/cierre/carta', [CierreController::class, 'storeCarta'])->name('cierre.carta.store');
+    Route::post('/proyectos/{proyecto}/cierre/carta/firmar-gpt', [CierreController::class, 'firmarGpt'])->name('cierre.carta.firmar.gpt');
+    Route::post('/proyectos/{proyecto}/cierre/carta/firmar-cliente', [CierreController::class, 'firmarCliente'])->name('cierre.carta.firmar.cliente');
+    Route::get('/proyectos/{proyecto}/cierre/carta/pdf', [CierreController::class, 'pdfCarta'])->name('cierre.carta.pdf');
+    Route::post('/proyectos/{proyecto}/cierre/postmortem', [CierreController::class, 'storePostMortem'])->name('cierre.postmortem.store');
+    Route::get('/proyectos/{proyecto}/cierre/postmortem/pdf', [CierreController::class, 'pdfPostMortem'])->name('cierre.postmortem.pdf');
+    Route::post('/proyectos/{proyecto}/cierre/cerrar', [CierreController::class, 'cerrarProyecto'])->name('cierre.cerrar');
+
+    // M10 · Chat
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{canalId}', [ChatController::class, 'show'])->whereNumber('canalId')->name('chat.show');
+    Route::post('/chat/proyecto/{proyecto}', [ChatController::class, 'paraProyecto'])->name('chat.proyecto');
+
     Route::get('/clientes', fn () => view('stub', ['mod' => 'M2 Clientes — UI pendiente']))->name('clientes.index');
     Route::get('/proyectos', fn () => redirect()->route('oportunidades.index'))->name('proyectos.index');
     Route::get('/proyectos/asignaciones', [AsignacionesController::class, 'index'])->name('proyectos.asignaciones');
-    Route::get('/bitacoras', fn () => view('stub', ['mod' => 'M7 Bitácoras']))->name('bitacoras.index');
-    Route::get('/suministros', fn () => view('stub', ['mod' => 'M5 Listado de Suministros']))->name('suministros.index');
+    Route::get('/bitacoras', fn () => redirect()->route('oportunidades.index'))->name('bitacoras');
+    Route::get('/suministros', fn () => redirect()->route('oportunidades.index'))->name('suministros.index');
     Route::middleware('finanzas')->group(function () {
-        Route::get('/finanzas/cuentas', fn () => view('stub', ['mod' => 'M11 Cuentas — UI pendiente']))->name('finanzas.cuentas');
-        Route::get('/finanzas/cierres', fn () => view('stub', ['mod' => 'M12 Cierres — UI pendiente']))->name('finanzas.cierres');
+        // M11 · Cuentas bancarias
+        Route::get('/finanzas/cuentas', [CuentasBancariasController::class, 'index'])->name('finanzas.cuentas');
+        Route::post('/finanzas/cuentas', [CuentasBancariasController::class, 'store'])->name('finanzas.cuentas.store');
+        Route::patch('/finanzas/cuentas/{cuenta}', [CuentasBancariasController::class, 'update'])->name('finanzas.cuentas.update');
+
+        // M11 · Estados de cuenta
+        Route::get('/finanzas/cuentas/{cuenta}/estados', [EstadosCuentaController::class, 'index'])->name('finanzas.estados.index');
+        Route::post('/finanzas/cuentas/{cuenta}/estados', [EstadosCuentaController::class, 'store'])->name('finanzas.estados.store');
+        Route::get('/finanzas/cuentas/{cuenta}/estados/{estado}', [EstadosCuentaController::class, 'show'])->name('finanzas.estados.show');
+
+        // M11 · Conciliación
+        Route::get('/finanzas/cuentas/{cuenta}/estados/{estado}/movimientos/{mov}', [ConciliacionController::class, 'show'])->name('finanzas.conciliacion.show');
+        Route::post('/finanzas/cuentas/{cuenta}/estados/{estado}/movimientos/{mov}/conciliar', [ConciliacionController::class, 'conciliar'])->name('finanzas.conciliacion.conciliar');
+        Route::delete('/finanzas/cuentas/{cuenta}/estados/{estado}/movimientos/{mov}/conciliar', [ConciliacionController::class, 'desconciliar'])->name('finanzas.conciliacion.desconciliar');
+
+        // M12 · Cierres mensuales
+        Route::get('/finanzas/cierres', [CierresController::class, 'index'])->name('finanzas.cierres');
+        Route::post('/finanzas/cierres', [CierresController::class, 'store'])->name('finanzas.cierres.store');
+        Route::get('/finanzas/cierres/{cierre}', [CierresController::class, 'show'])->name('finanzas.cierres.show');
+        Route::patch('/finanzas/cierres/{cierre}/regenerar', [CierresController::class, 'regenerar'])->name('finanzas.cierres.regenerar');
+        Route::post('/finanzas/cierres/{cierre}/aprobar', [CierresController::class, 'aprobar'])->name('finanzas.cierres.aprobar');
+        Route::post('/finanzas/cierres/{cierre}/cerrar', [CierresController::class, 'cerrar'])->name('finanzas.cierres.cerrar');
+        Route::patch('/finanzas/cierres/{cierre}/regresar', [CierresController::class, 'regresar'])->name('finanzas.cierres.regresar');
+        Route::get('/finanzas/cierres/{cierre}/pdf', [CierresController::class, 'pdf'])->name('finanzas.cierres.pdf');
     });
     Route::get('/ejecutivo', EjecutivoController::class)
         ->middleware('role:direccion_general|socio|comite_socios|cfo|super_admin')

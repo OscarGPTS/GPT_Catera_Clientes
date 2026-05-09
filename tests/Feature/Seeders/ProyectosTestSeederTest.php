@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ChatCanal;
 use App\Models\LibroProyecto;
 use App\Models\Proyecto;
 use Database\Seeders\ComercialCatalogosSeeder;
@@ -138,6 +139,91 @@ it('KOM cliente referencia el cronograma', function () {
     foreach ($proyectos as $p) {
         $kom = $p->koms()->where('tipo', 'kom_cliente')->first();
         expect($kom?->cronograma_attached_id)->not->toBeNull("KOM cliente del {$p->cp_numero} sin cronograma adjunto");
+    }
+});
+
+it('proyectos en ejecución+ tienen BOM/BOE heredado de la cotización', function () {
+    $proyectos = Proyecto::whereIn('estado', ['en_ejecucion', 'en_cierre', 'cerrado'])->get();
+
+    foreach ($proyectos as $p) {
+        expect($p->bomBoeItems()->count())->toBeGreaterThan(0, "Proyecto {$p->cp_numero} sin BOM/BOE");
+    }
+});
+
+it('proyectos en ejecución+ tienen listado de suministros con avance', function () {
+    $proyectos = Proyecto::whereIn('estado', ['en_ejecucion', 'en_cierre', 'cerrado'])->get();
+
+    foreach ($proyectos as $p) {
+        expect($p->listadoSuministros)->not->toBeNull("Proyecto {$p->cp_numero} sin listado de suministros")
+            ->and($p->listadoSuministros->items()->count())->toBeGreaterThan(0);
+    }
+});
+
+it('proyectos en ejecución+ tienen al menos una solicitud interna respondida', function () {
+    $proyectos = Proyecto::whereIn('estado', ['en_ejecucion', 'en_cierre', 'cerrado'])->get();
+
+    foreach ($proyectos as $p) {
+        $sol = $p->solicitudesInternas()->where('estado', 'respondida')->first();
+        expect($sol)->not->toBeNull("Proyecto {$p->cp_numero} sin solicitud interna respondida");
+    }
+});
+
+it('libro de proyecto refleja avance proporcional al estado del proyecto', function () {
+    $enEjec = Proyecto::where('estado', 'en_ejecucion')->first();
+    $enCierre = Proyecto::where('estado', 'en_cierre')->first();
+    $cerrado = Proyecto::where('estado', 'cerrado')->first();
+
+    expect((float) $enEjec->libro->porcentaje_avance_global)->toBeGreaterThan(20.0)->toBeLessThan(60.0)
+        ->and((float) $enCierre->libro->porcentaje_avance_global)->toBeGreaterThanOrEqual(80.0)
+        ->and((float) $cerrado->libro->porcentaje_avance_global)->toBe(100.0);
+});
+
+it('libro al 100% libera el bloqueo de cierre (D11)', function () {
+    $cerrado = Proyecto::where('estado', 'cerrado')->first();
+
+    expect($cerrado->libro->bloqueado_para_cierre)->toBeFalse();
+});
+
+it('proyectos en ejecución+ tienen al menos 5 bitácoras', function () {
+    foreach (Proyecto::whereIn('estado', ['en_ejecucion', 'en_cierre', 'cerrado'])->get() as $p) {
+        expect($p->bitacoras()->count())->toBeGreaterThanOrEqual(5, "Proyecto {$p->cp_numero} sin bitácoras suficientes");
+    }
+});
+
+it('proyectos en ejecución+ tienen un reporte semanal generado', function () {
+    foreach (Proyecto::whereIn('estado', ['en_ejecucion', 'en_cierre', 'cerrado'])->get() as $p) {
+        expect($p->reportesSemanales()->count())->toBeGreaterThanOrEqual(1, "Proyecto {$p->cp_numero} sin reporte semanal");
+    }
+});
+
+it('proyecto en ejecución tiene una solicitud de viáticos aprobada', function () {
+    $p = Proyecto::where('estado', 'en_ejecucion')->first();
+    $s = $p->solicitudesViaticos()->where('status', 'aprobada')->first();
+    expect($s)->not->toBeNull()
+        ->and($s->aprobador_serv_grales_id)->not->toBeNull()
+        ->and($s->aprobador_direccion_id)->not->toBeNull();
+});
+
+it('proyectos en cierre+ tienen carta finiquito', function () {
+    foreach (Proyecto::whereIn('estado', ['en_cierre', 'cerrado'])->get() as $p) {
+        expect($p->cartaFiniquito)->not->toBeNull("Proyecto {$p->cp_numero} sin carta finiquito");
+    }
+});
+
+it('proyecto cerrado tiene carta firmada por ambos lados y post-mortem', function () {
+    $p = Proyecto::where('estado', 'cerrado')->first();
+    expect($p->cartaFiniquito->firmado_gpt_at)->not->toBeNull()
+        ->and($p->cartaFiniquito->firmado_cliente_at)->not->toBeNull()
+        ->and($p->postMortem)->not->toBeNull()
+        ->and($p->postMortem->desviaciones_costo)->not->toBeNull()
+        ->and($p->postMortem->desviaciones_calidad)->not->toBeNull();
+});
+
+it('proyectos adjudicados+ tienen canal de chat con mensajes', function () {
+    foreach (Proyecto::whereIn('estado', ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado'])->get() as $p) {
+        $canal = ChatCanal::where('tipo', 'proyecto')->where('contexto_id', $p->id)->first();
+        expect($canal)->not->toBeNull("Proyecto {$p->cp_numero} sin canal de chat")
+            ->and($canal->mensajes()->count())->toBeGreaterThan(0);
     }
 });
 

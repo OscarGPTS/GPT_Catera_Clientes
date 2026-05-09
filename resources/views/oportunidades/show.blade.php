@@ -38,6 +38,12 @@
                 <p class="text-xs font-mono text-slate-500 mt-1">{{ $proyecto->tech_reference }}</p>
             @endif
         </div>
+        @if (in_array($proyecto->estado, ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado']))
+            <form method="POST" action="{{ route('chat.proyecto', $proyecto) }}">
+                @csrf
+                <button class="rounded-md border border-gpt-200 hover:bg-gpt-50 text-gpt-700 text-sm px-3 py-1.5">💬 Chat del proyecto</button>
+            </form>
+        @endif
     </div>
 
     <div class="grid lg:grid-cols-3 gap-6">
@@ -154,13 +160,57 @@
                 </section>
             @endif
 
+            @if (in_array($proyecto->estado, ['en_ejecucion', 'en_cierre', 'cerrado']))
+                <a href="{{ route('libro.show', $proyecto) }}"
+                   class="block bg-white border-2 border-emerald-300 rounded-xl p-5 hover:border-emerald-500 hover:bg-emerald-50">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold text-slate-900">📘 Libro de Proyecto</h3>
+                            <p class="text-xs text-slate-500 mt-1">10 secciones A-J · checklist + documentos · D11 bloqueo de cierre</p>
+                        </div>
+                        @if ($proyecto->libro)
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-emerald-700">{{ number_format((float) $proyecto->libro->porcentaje_avance_global, 0) }}%</p>
+                                <p class="text-xs text-slate-500">avance</p>
+                            </div>
+                        @endif
+                    </div>
+                </a>
+            @endif
+
+            @if (in_array($proyecto->estado, ['en_cierre', 'cerrado']))
+                <a href="{{ route('cierre.show', $proyecto) }}"
+                   class="block bg-white border-2 border-amber-300 rounded-xl p-5 hover:border-amber-500 hover:bg-amber-50">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold text-slate-900">🏁 Cierre del proyecto</h3>
+                            <p class="text-xs text-slate-500 mt-1">Carta Finiquito + Post-Mortem · D11/D12</p>
+                        </div>
+                        @php
+                            $cartaCierre = $proyecto->cartaFiniquito;
+                            $cartaFirmada = $cartaCierre && $cartaCierre->firmado_gpt_at && $cartaCierre->firmado_cliente_at;
+                        @endphp
+                        <div class="text-right">
+                            <p class="text-sm font-semibold {{ $proyecto->estado === 'cerrado' ? 'text-emerald-700' : 'text-amber-700' }}">
+                                {{ $proyecto->estado === 'cerrado' ? 'cerrado' : ($cartaFirmada ? 'listo para cerrar' : 'pendiente') }}
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                {{ $cartaCierre ? 'Carta ' . ($cartaFirmada ? '✓✓' : ($cartaCierre->firmado_gpt_at ? '✓-' : '--')) : 'Sin carta' }}
+                                ·
+                                {{ $proyecto->postMortem ? 'PM ✓' : 'PM —' }}
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            @endif
+
             @if (in_array($proyecto->estado, ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado']))
                 <section class="bg-white border border-slate-200 rounded-xl p-6">
-                    <div class="grid md:grid-cols-2 gap-3">
+                    <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-3">
                         <a href="{{ route('koms.index', $proyecto) }}"
                            class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
                             <h3 class="font-semibold text-slate-900">KOMs</h3>
-                            <p class="text-xs text-slate-500 mt-1">{{ $proyecto->koms->count() }} reuniones registradas</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ $proyecto->koms->count() }} reuniones</p>
                         </a>
                         <a href="{{ route('cronogramas.index', $proyecto) }}"
                            class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
@@ -168,13 +218,54 @@
                             <p class="text-xs text-slate-500 mt-1">
                                 @php $cv = $proyecto->cronogramas->first(); @endphp
                                 @if ($cv)
-                                    v{{ $cv->version }} · {{ $cv->actividades_count ?? $cv->actividades()->count() }} actividades
+                                    v{{ $cv->version }}
                                 @else
                                     Sin cronograma
                                 @endif
                             </p>
                         </a>
+                        <a href="{{ route('bom.index', $proyecto) }}"
+                           class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                            <h3 class="font-semibold text-slate-900">BOM/BOE</h3>
+                            <p class="text-xs text-slate-500 mt-1">{{ $proyecto->bomBoeItems->count() }} items</p>
+                        </a>
+                        <a href="{{ route('suministros.show', $proyecto) }}"
+                           class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                            <h3 class="font-semibold text-slate-900">Suministros</h3>
+                            <p class="text-xs text-slate-500 mt-1">
+                                @if ($proyecto->listadoSuministros)
+                                    {{ number_format((float) $proyecto->listadoSuministros->porcentaje_avance_global, 0) }}% avance
+                                @else
+                                    No abierto
+                                @endif
+                            </p>
+                        </a>
+                        <a href="{{ route('solicitudes.index', $proyecto) }}"
+                           class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                            <h3 class="font-semibold text-slate-900">Solicitudes Internas</h3>
+                            <p class="text-xs text-slate-500 mt-1">{{ $proyecto->solicitudesInternas->count() }} registradas</p>
+                        </a>
                     </div>
+
+                    @if (in_array($proyecto->estado, ['en_ejecucion', 'en_cierre', 'cerrado']))
+                        <div class="grid md:grid-cols-3 gap-3 mt-3">
+                            <a href="{{ route('bitacoras.index', $proyecto) }}"
+                               class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                                <h3 class="font-semibold text-slate-900">📓 Bitácoras</h3>
+                                <p class="text-xs text-slate-500 mt-1">{{ $proyecto->bitacoras->count() }} cargadas</p>
+                            </a>
+                            <a href="{{ route('reportes.index', $proyecto) }}"
+                               class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                                <h3 class="font-semibold text-slate-900">📊 Reportes semanales</h3>
+                                <p class="text-xs text-slate-500 mt-1">{{ $proyecto->reportesSemanales->count() }} generados</p>
+                            </a>
+                            <a href="{{ route('viaticos.index', $proyecto) }}"
+                               class="block p-4 border border-slate-200 rounded-lg hover:border-gpt-400 hover:bg-gpt-50">
+                                <h3 class="font-semibold text-slate-900">💰 Viáticos</h3>
+                                <p class="text-xs text-slate-500 mt-1">{{ $proyecto->solicitudesViaticos->count() }} solicitudes</p>
+                            </a>
+                        </div>
+                    @endif
                 </section>
             @endif
 

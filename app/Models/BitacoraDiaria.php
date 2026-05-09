@@ -47,4 +47,9 @@ class BitacoraDiaria extends Model
     {
         return $this->belongsTo(Proyecto::class);
     }
+
+    public function cargadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cargado_por_id');
+    }
 }

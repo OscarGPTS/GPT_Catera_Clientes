@@ -23,4 +23,14 @@ class LibroSeccionChecklist extends Model
     {
         return $this->belongsTo(LibroSeccion::class, 'seccion_id');
     }
+
+    public function evidencia(): BelongsTo
+    {
+        return $this->belongsTo(LibroDocumento::class, 'evidencia_documento_id');
+    }
+
+    public function completadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completado_por_id');
+    }
 }

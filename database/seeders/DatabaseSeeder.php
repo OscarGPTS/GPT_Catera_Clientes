@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ComercialCatalogosSeeder::class,
             TestUsersSeeder::class,
             ProyectosTestSeeder::class,
+            FinanzasSeeder::class,
         ]);
 
         $admin = User::firstOrCreate(
