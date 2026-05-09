@@ -25,6 +25,7 @@ use App\Http\Controllers\Finanzas\EstadosCuentaController;
 use App\Http\Controllers\Kom\KomController;
 use App\Http\Controllers\Libro\LibroController;
 use App\Http\Controllers\Minutas\MinutaEntregaController;
+use App\Http\Controllers\Notificaciones\NotificacionesController;
 use App\Http\Controllers\Oportunidades\OportunidadesController;
 use App\Http\Controllers\Procura\BomController;
 use App\Http\Controllers\Procura\SolicitudesInternasController;
@@ -62,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/oportunidades/{proyecto}', [OportunidadesController::class, 'show'])->name('oportunidades.show');
     Route::post('/oportunidades/{proyecto}/aprobar', [OportunidadesController::class, 'aprobarCp'])->name('oportunidades.aprobarCp');
     Route::post('/oportunidades/{proyecto}/equipo', [OportunidadesController::class, 'asignarEquipo'])->name('oportunidades.asignarEquipo');
+    Route::get('/oportunidades/{proyecto}/ficha', [OportunidadesController::class, 'ficha'])->name('oportunidades.ficha');
 
     // M3 Cotizaciones / COSS
     Route::get('/oportunidades/{proyecto}/cotizaciones', [CotizacionesController::class, 'index'])->name('cotizaciones.index');
@@ -101,6 +103,7 @@ Route::middleware('auth')->group(function () {
     // M5a · Cronograma
     Route::get('/proyectos/{proyecto}/cronogramas', [CronogramaController::class, 'index'])->name('cronogramas.index');
     Route::post('/proyectos/{proyecto}/cronogramas', [CronogramaController::class, 'store'])->name('cronogramas.store');
+    Route::post('/proyectos/{proyecto}/cronogramas/importar', [CronogramaController::class, 'importar'])->name('cronogramas.importar');
     Route::get('/proyectos/{proyecto}/cronogramas/{cronograma}', [CronogramaController::class, 'show'])->name('cronogramas.show');
     Route::post('/proyectos/{proyecto}/cronogramas/{cronograma}/actividades', [CronogramaController::class, 'storeActividad'])->name('cronogramas.actividades.store');
     Route::patch('/proyectos/{proyecto}/cronogramas/{cronograma}/actividades/{actividad}', [CronogramaController::class, 'updateActividad'])->name('cronogramas.actividades.update');
@@ -138,6 +141,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/proyectos/{proyecto}/libro/secciones/{seccion}/documentos', [LibroController::class, 'uploadDocumento'])->name('libro.documentos.upload');
     Route::get('/proyectos/{proyecto}/libro/documentos/{documento}/descargar', [LibroController::class, 'descargarDocumento'])->name('libro.documentos.descargar');
     Route::delete('/proyectos/{proyecto}/libro/documentos/{documento}', [LibroController::class, 'destroyDocumento'])->name('libro.documentos.destroy');
+    Route::get('/proyectos/{proyecto}/libro/dossier', [LibroController::class, 'dossier'])->name('libro.dossier');
 
     // M7 · Bitácora diaria
     Route::get('/proyectos/{proyecto}/bitacoras', [BitacoraController::class, 'index'])->name('bitacoras.index');
@@ -182,6 +186,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat/{canalId}', [ChatController::class, 'show'])->whereNumber('canalId')->name('chat.show');
     Route::post('/chat/proyecto/{proyecto}', [ChatController::class, 'paraProyecto'])->name('chat.proyecto');
 
+    // M9 · Notificaciones
+    Route::get('/notificaciones', [NotificacionesController::class, 'index'])->name('notificaciones.index');
+    Route::patch('/notificaciones/{id}/marcar', [NotificacionesController::class, 'marcarLeida'])->name('notificaciones.marcar');
+    Route::post('/notificaciones/marcar-todo', [NotificacionesController::class, 'marcarTodoLeido'])->name('notificaciones.marcar-todo');
+
     Route::get('/clientes', fn () => view('stub', ['mod' => 'M2 Clientes — UI pendiente']))->name('clientes.index');
     Route::get('/proyectos', fn () => redirect()->route('oportunidades.index'))->name('proyectos.index');
     Route::get('/proyectos/asignaciones', [AsignacionesController::class, 'index'])->name('proyectos.asignaciones');
@@ -213,9 +222,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/finanzas/cierres/{cierre}/regresar', [CierresController::class, 'regresar'])->name('finanzas.cierres.regresar');
         Route::get('/finanzas/cierres/{cierre}/pdf', [CierresController::class, 'pdf'])->name('finanzas.cierres.pdf');
     });
-    Route::get('/ejecutivo', EjecutivoController::class)
-        ->middleware('role:direccion_general|socio|comite_socios|cfo|super_admin')
-        ->name('ejecutivo.index');
+    Route::middleware('role:direccion_general|socio|comite_socios|cfo|super_admin')->group(function () {
+        Route::get('/ejecutivo', EjecutivoController::class)->name('ejecutivo.index');
+        Route::get('/ejecutivo/pdf', [EjecutivoController::class, 'pdf'])->name('ejecutivo.pdf');
+        Route::get('/ejecutivo/excel', [EjecutivoController::class, 'excel'])->name('ejecutivo.excel');
+    });
 
     Route::middleware('role:super_admin|direccion_general')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/usuarios', [UsuariosController::class, 'index'])->name('usuarios.index');

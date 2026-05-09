@@ -4,6 +4,7 @@ namespace App\Services\Ejecucion;
 
 use App\Models\Proyecto;
 use App\Models\SolicitudViaticos;
+use App\Notifications\ViaticosAprobadosNotification;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -107,6 +108,10 @@ class ViaticosService
             userId: $userId,
             payload: ['solicitud_id' => $solicitud->id],
         );
+
+        // M9 · Notificar al solicitante
+        $solicitud->loadMissing(['proyecto', 'solicitante', 'partidas']);
+        $solicitud->solicitante?->notify(new ViaticosAprobadosNotification($solicitud));
 
         return $solicitud->fresh();
     }

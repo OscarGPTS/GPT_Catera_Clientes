@@ -9,9 +9,11 @@ use App\Models\LibroSeccionChecklist;
 use App\Models\Proyecto;
 use App\Models\User;
 use App\Services\Libro\AperturaLibroService;
+use App\Services\Libro\DossierConsolidadoGenerator;
 use App\Services\Libro\LibroService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LibroController extends Controller
@@ -125,6 +127,20 @@ class LibroController extends Controller
         $service->actualizarBloqueoCierre($proyecto->libro);
 
         return back()->with('status', 'Documento eliminado.');
+    }
+
+    public function dossier(Proyecto $proyecto, DossierConsolidadoGenerator $generator): StreamedResponse
+    {
+        if (! $proyecto->libro) {
+            abort(404, 'El libro no está abierto para este proyecto.');
+        }
+
+        $path = $generator->generar($proyecto->libro);
+
+        return Storage::disk('local')->download(
+            $path,
+            'Dossier-'.str_replace(['/', ' '], '-', $proyecto->cp_numero ?? "p{$proyecto->id}").'.pdf',
+        );
     }
 
     private function ensureSeccionBelongsTo(Proyecto $proyecto, LibroSeccion $seccion): void

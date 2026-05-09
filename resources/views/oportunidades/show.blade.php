@@ -38,12 +38,15 @@
                 <p class="text-xs font-mono text-slate-500 mt-1">{{ $proyecto->tech_reference }}</p>
             @endif
         </div>
-        @if (in_array($proyecto->estado, ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado']))
-            <form method="POST" action="{{ route('chat.proyecto', $proyecto) }}">
-                @csrf
-                <button class="rounded-md border border-gpt-200 hover:bg-gpt-50 text-gpt-700 text-sm px-3 py-1.5">💬 Chat del proyecto</button>
-            </form>
-        @endif
+        <div class="flex gap-2 items-start">
+            <a href="{{ route('oportunidades.ficha', $proyecto) }}" class="rounded-md border border-rose-200 hover:bg-rose-50 text-rose-700 text-sm px-3 py-1.5">📄 Ficha PDF</a>
+            @if (in_array($proyecto->estado, ['adjudicado_firmado', 'en_ejecucion', 'en_cierre', 'cerrado']))
+                <form method="POST" action="{{ route('chat.proyecto', $proyecto) }}">
+                    @csrf
+                    <button class="rounded-md border border-gpt-200 hover:bg-gpt-50 text-gpt-700 text-sm px-3 py-1.5">💬 Chat del proyecto</button>
+                </form>
+            @endif
+        </div>
     </div>
 
     <div class="grid lg:grid-cols-3 gap-6">

@@ -16,6 +16,20 @@
         </form>
     </div>
 
+    <details class="bg-white border border-slate-200 rounded-xl p-5 mb-6">
+        <summary class="cursor-pointer text-sm font-semibold text-gpt-600">📥 Importar desde MS Project (.xml o .csv)</summary>
+        <form method="POST" action="{{ route('cronogramas.importar', $proyecto) }}" enctype="multipart/form-data" class="mt-4 space-y-3">
+            @csrf
+            <input name="archivo" type="file" accept=".xml,.csv,.txt" required class="block w-full text-sm" />
+            <p class="text-xs text-slate-500">
+                MSP → File → Save As → <strong>XML</strong> (recomendado, conserva predecesoras y outline level), o exportar la vista de tareas como <strong>CSV</strong>.
+                <span class="text-amber-700">.mpp binario no se soporta nativamente.</span>
+            </p>
+            <button class="rounded-md bg-slate-900 hover:bg-slate-800 text-white text-sm px-4 py-2">Importar archivo</button>
+        </form>
+        <p class="text-[10px] text-slate-400 mt-2">El import crea una nueva versión y reemplaza las actividades. La versión anterior queda intacta.</p>
+    </details>
+
     @if ($cronogramas->isEmpty())
         <div class="bg-white border border-dashed border-slate-300 rounded-xl p-10 text-center">
             <p class="text-slate-500">Aún no hay cronogramas. Crea la primera versión para empezar.</p>

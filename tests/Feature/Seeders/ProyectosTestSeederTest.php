@@ -3,6 +3,7 @@
 use App\Models\ChatCanal;
 use App\Models\LibroProyecto;
 use App\Models\Proyecto;
+use App\Notifications\PostMortemRequeridoNotification;
 use Database\Seeders\ComercialCatalogosSeeder;
 use Database\Seeders\ProyectosTestSeeder;
 use Database\Seeders\RhRoleMappingSeeder;
@@ -225,6 +226,16 @@ it('proyectos adjudicados+ tienen canal de chat con mensajes', function () {
         expect($canal)->not->toBeNull("Proyecto {$p->cp_numero} sin canal de chat")
             ->and($canal->mensajes()->count())->toBeGreaterThan(0);
     }
+});
+
+it('proyecto en_cierre dispara PostMortemRequeridoNotification a GP y DG', function () {
+    $p = Proyecto::where('estado', 'en_cierre')->first();
+    expect($p)->not->toBeNull();
+
+    $tipo = PostMortemRequeridoNotification::class;
+
+    expect($p->gerenteProyectos?->notifications()->where('type', $tipo)->exists())->toBeTrue()
+        ->and($p->directorDn?->notifications()->where('type', $tipo)->exists())->toBeTrue();
 });
 
 it('CPs son secuenciales y únicos', function () {

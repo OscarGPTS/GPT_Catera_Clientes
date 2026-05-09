@@ -9,13 +9,17 @@
             <h1 class="text-xl font-semibold text-slate-900">Vista Ejecutiva · {{ $año }}</h1>
             <p class="text-sm text-slate-500">KPIs en tiempo real para Dirección y Socios.</p>
         </div>
-        <form method="GET" class="flex gap-2">
-            <select name="año" onchange="this.form.submit()" class="rounded-md border-slate-200 text-sm">
-                @for ($y = now()->year - 2; $y <= now()->year + 1; $y++)
-                    <option value="{{ $y }}" @selected($año === $y)>{{ $y }}</option>
-                @endfor
-            </select>
-        </form>
+        <div class="flex gap-2 items-center">
+            <form method="GET" class="flex gap-2">
+                <select name="año" onchange="this.form.submit()" class="rounded-md border-slate-200 text-sm">
+                    @for ($y = now()->year - 2; $y <= now()->year + 1; $y++)
+                        <option value="{{ $y }}" @selected($año === $y)>{{ $y }}</option>
+                    @endfor
+                </select>
+            </form>
+            <a href="{{ route('ejecutivo.pdf', ['año' => $año]) }}" class="rounded-md bg-rose-600 hover:bg-rose-700 text-white text-sm px-3 py-1.5">📄 PDF</a>
+            <a href="{{ route('ejecutivo.excel', ['año' => $año]) }}" class="rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5">📊 Excel</a>
+        </div>
     </div>
 
     @if (! empty($kpis['alertas_concentracion']) && count($kpis['alertas_concentracion']))

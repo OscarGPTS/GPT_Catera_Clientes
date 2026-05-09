@@ -7,10 +7,14 @@ use App\Models\Cliente;
 use App\Models\Proyecto;
 use App\Models\Sublinea;
 use App\Models\User;
+use App\Notifications\CpAprobadoNotification;
+use App\Services\Proyectos\FichaProyectoPdfGenerator;
 use App\Services\Proyectos\SecuenciasService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OportunidadesController extends Controller
 {
@@ -149,6 +153,10 @@ class OportunidadesController extends Controller
                 estadoAnterior: $estadoAnterior,
             );
 
+            // M9 · Notificar al gerente de proyectos asignado
+            $gerente = User::find($data['gerente_proyectos_id']);
+            $gerente?->notify(new CpAprobadoNotification($proyecto->fresh()));
+
             return back()->with('status', "CP {$proyecto->cp_numero} aprobado y asignado.");
         }
 
@@ -180,6 +188,16 @@ class OportunidadesController extends Controller
         );
 
         return back()->with('status', 'Equipo asignado al CP.');
+    }
+
+    public function ficha(Proyecto $proyecto, FichaProyectoPdfGenerator $generator): StreamedResponse
+    {
+        $path = $generator->generar($proyecto);
+
+        return Storage::disk('local')->download(
+            $path,
+            'Ficha-'.str_replace(['/', ' '], '-', $proyecto->cp_numero ?? "p{$proyecto->id}").'.pdf',
+        );
     }
 
     /** @return array<string, string> */

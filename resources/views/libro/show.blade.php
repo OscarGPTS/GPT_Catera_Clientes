@@ -14,6 +14,7 @@
         <div class="text-right">
             <p class="text-3xl font-bold text-emerald-700">{{ number_format((float) $libro->porcentaje_avance_global, 1) }}%</p>
             <p class="text-xs text-slate-500">avance global del dossier</p>
+            <a href="{{ route('libro.dossier', $proyecto) }}" class="inline-block mt-2 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5">📦 Dossier consolidado PDF</a>
         </div>
     </div>
 

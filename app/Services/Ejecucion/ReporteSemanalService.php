@@ -4,6 +4,7 @@ namespace App\Services\Ejecucion;
 
 use App\Models\Proyecto;
 use App\Models\ReporteSemanal;
+use App\Notifications\ReporteSemanalGeneradoNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -49,6 +50,12 @@ class ReporteSemanalService
                     'semana' => $inicio->format('Y-m-d'),
                 ],
             );
+
+            // M9 · Notificar a GP y director_dn que el reporte está listo
+            $destinatarios = collect([$proyecto->gerenteProyectos, $proyecto->directorDn])->filter()->unique('id');
+            foreach ($destinatarios as $u) {
+                $u->notify(new ReporteSemanalGeneradoNotification($reporte->fresh()));
+            }
 
             return $reporte->fresh();
         });

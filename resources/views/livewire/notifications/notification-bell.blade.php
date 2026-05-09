@@ -17,18 +17,56 @@
                 @endif
             </div>
             <div class="max-h-96 overflow-y-auto divide-y divide-slate-100">
-                @forelse ($this->menciones as $m)
+                @php
+                    $tipoIcons = [
+                        'cp_aprobado' => '✅',
+                        'cp_asignado' => '📋',
+                        'cotizacion_emitida' => '💰',
+                        'oc_firmada' => '✍',
+                        'minuta_firmada' => '📝',
+                        'viaticos_aprobados' => '💳',
+                        'reporte_semanal_generado' => '📊',
+                        'post_mortem_requerido' => '⚠',
+                    ];
+                @endphp
+
+                @foreach ($this->notificaciones as $n)
+                    @php
+                        $data = $n->data ?? [];
+                        $tipo = $data['tipo'] ?? 'sistema';
+                        $icon = $tipoIcons[$tipo] ?? '🔔';
+                    @endphp
+                    <a href="{{ $data['url'] ?? '#' }}"
+                       wire:click="marcarLeida('{{ $n->id }}')"
+                       class="block px-4 py-3 hover:bg-slate-50">
+                        <p class="text-xs text-slate-500">
+                            {{ $icon }} <span class="font-mono">{{ str_replace('_', ' ', $tipo) }}</span>
+                        </p>
+                        <p class="text-sm font-semibold text-slate-900 mt-1">{{ $data['titulo'] ?? '—' }}</p>
+                        @if (! empty($data['mensaje']))
+                            <p class="text-xs text-slate-700 line-clamp-2 mt-0.5">{{ $data['mensaje'] }}</p>
+                        @endif
+                        <p class="text-xs text-slate-400 mt-1">{{ $n->created_at?->diffForHumans() }}</p>
+                    </a>
+                @endforeach
+
+                @foreach ($this->menciones as $m)
                     <a href="{{ route('chat.show', $m->mensaje?->canal_id) }}" class="block px-4 py-3 hover:bg-slate-50">
                         <p class="text-xs text-slate-500">
-                            <strong>{{ $m->mensaje?->user?->name ?? '—' }}</strong>
+                            💬 <strong>{{ $m->mensaje?->user?->name ?? '—' }}</strong>
                             te mencionó en <span class="font-mono text-gpt-700">{{ $m->mensaje?->canal?->nombre ?? '—' }}</span>
                         </p>
                         <p class="text-sm text-slate-700 mt-1 line-clamp-2">{{ $m->mensaje?->contenido }}</p>
                         <p class="text-xs text-slate-400 mt-1">{{ $m->created_at?->diffForHumans() }}</p>
                     </a>
-                @empty
+                @endforeach
+
+                @if ($this->notificaciones->isEmpty() && $this->menciones->isEmpty())
                     <p class="px-4 py-8 text-sm text-slate-500 text-center">Sin notificaciones nuevas.</p>
-                @endforelse
+                @endif
+            </div>
+            <div class="px-4 py-2 border-t bg-slate-50 text-center">
+                <a href="{{ route('notificaciones.index') }}" class="text-xs text-gpt-600 hover:underline">Ver todas</a>
             </div>
         </div>
     @endif

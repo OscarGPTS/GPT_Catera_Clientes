@@ -7,6 +7,7 @@ use App\Models\Cronograma;
 use App\Models\CronogramaActividad;
 use App\Models\Proyecto;
 use App\Services\Proyectos\CronogramaService;
+use App\Services\Proyectos\MsProject\CronogramaImporterService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -35,6 +36,23 @@ class CronogramaController extends Controller
         return redirect()
             ->route('cronogramas.show', [$proyecto, $cron])
             ->with('status', "Cronograma v{$cron->version} creado.");
+    }
+
+    public function importar(Request $request, Proyecto $proyecto, CronogramaImporterService $importer): RedirectResponse
+    {
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:xml,csv,txt,mpp', 'max:51200'],
+        ]);
+
+        try {
+            $cron = $importer->importar($proyecto, $request->file('archivo'), $request->user()->id);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['archivo' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('cronogramas.show', [$proyecto, $cron])
+            ->with('status', "Cronograma v{$cron->version} importado: {$cron->actividades()->count()} actividades.");
     }
 
     public function show(Proyecto $proyecto, Cronograma $cronograma, CronogramaService $service)

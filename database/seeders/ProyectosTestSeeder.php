@@ -7,6 +7,7 @@ use App\Models\Cronograma;
 use App\Models\Proyecto;
 use App\Models\Sublinea;
 use App\Models\User;
+use App\Notifications\PostMortemRequeridoNotification;
 use App\Services\Chat\ChatService;
 use App\Services\Cierre\CartaFiniquitoService;
 use App\Services\Cierre\PostMortemService;
@@ -479,6 +480,14 @@ class ProyectosTestSeeder extends Seeder
 
                 if ($row['estado'] === 'cerrado') {
                     $chatService->enviarMensaje($canal, $autorChat->id, 'Proyecto cerrado oficialmente. Buen trabajo equipo 🎉');
+                }
+            }
+
+            // M9 · Notificar PostMortemRequerido cuando proyecto entra en_cierre
+            if ($row['estado'] === 'en_cierre') {
+                $destinatarios = collect([$row['gerente_proyectos'] ?? null, $row['director_dn']])->filter()->unique('id');
+                foreach ($destinatarios as $u) {
+                    $u->notify(new PostMortemRequeridoNotification($proyecto->fresh()));
                 }
             }
 

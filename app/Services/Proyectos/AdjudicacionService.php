@@ -4,6 +4,7 @@ namespace App\Services\Proyectos;
 
 use App\Models\Proyecto;
 use App\Models\SystemSetting;
+use App\Notifications\OcFirmadaNotification;
 use App\Services\Libro\AperturaLibroService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -103,7 +104,14 @@ class AdjudicacionService
                 estadoAnterior: $estadoAnterior,
             );
 
-            return $proyecto->fresh();
+            // M9 · Notificar a GP y GO que el DN está asignado y deben levantar minuta
+            $fresh = $proyecto->fresh();
+            $destinatarios = collect([$fresh->gerenteProyectos, $fresh->gerenteOperaciones])->filter();
+            foreach ($destinatarios as $u) {
+                $u->notify(new OcFirmadaNotification($fresh));
+            }
+
+            return $fresh;
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Services\Minutas;
 
 use App\Models\MinutaEntrega;
 use App\Models\Proyecto;
+use App\Notifications\MinutaFirmadaNotification;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -108,6 +109,13 @@ class MinutaEntregaService
                     userId: $userId,
                     payload: ['minuta_id' => $minuta->id],
                 );
+
+                // M9 · Notificar a GP y director_dn
+                $proyecto = $minuta->proyecto;
+                $destinatarios = collect([$proyecto->gerenteProyectos, $proyecto->directorDn])->filter()->unique('id');
+                foreach ($destinatarios as $u) {
+                    $u->notify(new MinutaFirmadaNotification($minuta->fresh()));
+                }
             }
 
             return $minuta->fresh('participantes.user');

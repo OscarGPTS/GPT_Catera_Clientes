@@ -4,6 +4,7 @@ namespace App\Services\Cotizaciones;
 
 use App\Models\Cotizacion;
 use App\Models\Proyecto;
+use App\Notifications\CotizacionEmitidaNotification;
 use App\ValueObjects\ResultadoCoss;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -131,6 +132,11 @@ class CotizacionService
                 ],
                 estadoAnterior: $estadoAnterior !== $proyecto->estado ? $estadoAnterior : null,
             );
+
+            // M9 · Notificar al director_dn que la cotización está lista para presentar
+            if ($proyecto->director_dn_id && $proyecto->directorDn) {
+                $proyecto->directorDn->notify(new CotizacionEmitidaNotification($cotizacion));
+            }
 
             return $cotizacion->fresh();
         });
